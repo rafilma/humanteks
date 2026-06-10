@@ -57,7 +57,7 @@ st.write("Masukkan teks atau artikel di bawah ini untuk mendeteksi apakah teks t
 # Input Teks area
 user_input = st.text_area("Masukkan Teks Di Sini:", height=250, placeholder="Ketik atau tempel teks teks Anda...")
 
-# Parameter maxlen saat pelatihan model
+# Parameter maxlen saat pelatihan model (Sesuaikan dengan notebook Anda)
 MAX_LEN = 200 
 
 if st.button("Deteksi Teks", type="primary"):
@@ -68,10 +68,12 @@ if st.button("Deteksi Teks", type="primary"):
             # 1. Preprocessing teks input
             cleaned_text = text_preprocessing(user_input)
             
-            # 2. Tokenizing & Padding 
-            # DIKEMBALIKAN KE 'post' agar urutan indeks angka tidak bergeser tertutup padding awal
+            # 2. Tokenizing & Padding
             sequences = tokenizer.texts_to_sequences([cleaned_text])
-            padded = pad_sequences(sequences, maxlen=MAX_LEN, padding='post') 
+            padded = pad_sequences(sequences, maxlen=MAX_LEN, padding='post')
+            
+            # Konversi tipe data ke float32 untuk kestabilan prediksi TensorFlow
+            padded = np.array(padded, dtype=np.float32)
             
             # 3. Prediksi Model
             prediction = model.predict(padded)[0][0]
@@ -79,10 +81,11 @@ if st.button("Deteksi Teks", type="primary"):
             # 4. Menampilkan Hasil
             st.subheader("Hasil Analisis:")
             
-            # DIKEMBALIKAN KE STANDAR KORIDOR CONFUSION MATRIX KANAN (0 = Human, 1 = AI)
+            # Berdasarkan Confusion Matrix pada notebook Anda: xticklabels=['Human (0)', 'AI (1)']
+            # Label 0 = Human, Label 1 = AI (Artinya mendekati 1 adalah AI)
             if prediction >= 0.5:
                 confidence = prediction * 100
-                st.error(f"🚨 **Terdeteksi sebagai teks buatan AI** ({confidence:.2f}% kepastian)")
+                st.error(f"🚨 **Terdeteksi sebagai teks buetan AI** ({confidence:.2f}% kepastian)")
             else:
                 confidence = (1 - prediction) * 100
                 st.success(f"✍️ **Terdeteksi sebagai teks buatan Manusia** ({confidence:.2f}% kepastian)")
