@@ -35,12 +35,14 @@ def text_preprocessing(text):
 # --- 3. LOAD MODEL & TOKENIZER (Menggunakan Cache agar Cepat) ---
 @st.cache_resource
 def load_assets():
-    # Membaca file Tokenizer sebagai string mentah (.read())
-    with open('tokenizer.json', 'r') as f:
-        tokenizer_json = f.read() 
+    # Menggunakan encoding utf-8 untuk mencegah karakter korup saat pembacaan di cloud
+    with open('tokenizer.json', 'r', encoding='utf-8') as f:
+        tokenizer_json = f.read()
+    
+    # Rekonstruksi Tokenizer Keras
     tokenizer = tokenizer_from_json(tokenizer_json)
         
-    # Memuat model dengan format Keras (.keras)
+    # Memuat berkas model Keras (.keras)
     model = tf.keras.models.load_model('model_bilstm.keras')
     return tokenizer, model
 
@@ -57,7 +59,7 @@ st.write("Masukkan teks atau artikel di bawah ini untuk mendeteksi apakah teks t
 # Input Teks area
 user_input = st.text_area("Masukkan Teks Di Sini:", height=250, placeholder="Ketik atau tempel teks teks Anda...")
 
-# Parameter maxlen saat pelatihan model (Sesuaikan dengan notebook Anda)
+# Parameter maxlen saat pelatihan model
 MAX_LEN = 200 
 
 if st.button("Deteksi Teks", type="primary"):
@@ -68,24 +70,25 @@ if st.button("Deteksi Teks", type="primary"):
             # 1. Preprocessing teks input
             cleaned_text = text_preprocessing(user_input)
             
-            # 2. Tokenizing & Padding
-            sequences = tokenizer.texts_to_sequences([cleaned_text])
-            padded = pad_sequences(sequences, maxlen=MAX_LEN, padding='post')
+            # 2. Tokenizing & Padding 
+            # Menggunakan teknik konversi tipe data yang aman ke list standar Python sebelum di-pad
+            raw_sequences = tokenizer.texts_to_sequences([str(cleaned_text)])
+            padded = pad_sequences(raw_sequences, maxlen=MAX_LEN, padding='post')
             
-            # Konversi tipe data ke float32 untuk kestabilan prediksi TensorFlow
-            padded = np.array(padded, dtype=np.float32)
+            # Pastikan tipe data berupa objek numpy array float32/int32 murni
+            input_matrix = np.array(padded, dtype=np.int32)
             
             # 3. Prediksi Model
-            prediction = model.predict(padded)[0][0]
+            prediction_raw = model.predict(input_matrix)
+            prediction = float(prediction_raw[0][0])
             
             # 4. Menampilkan Hasil
             st.subheader("Hasil Analisis:")
             
-            # Berdasarkan Confusion Matrix pada notebook Anda: xticklabels=['Human (0)', 'AI (1)']
-            # Label 0 = Human, Label 1 = AI (Artinya mendekati 1 adalah AI)
+            # Logika ambang batas standar (0 = Human, 1 = AI)
             if prediction >= 0.5:
                 confidence = prediction * 100
-                st.error(f"🚨 **Terdeteksi sebagai teks buetan AI** ({confidence:.2f}% kepastian)")
+                st.error(f"🚨 **Terdeteksi sebagai teks buatan AI** ({confidence:.2f}% kepastian)")
             else:
                 confidence = (1 - prediction) * 100
                 st.success(f"✍️ **Terdeteksi sebagai teks buatan Manusia** ({confidence:.2f}% kepastian)")
@@ -93,5 +96,6 @@ if st.button("Deteksi Teks", type="primary"):
             # Fitur Opsional untuk Debugging
             with st.expander("Lihat Detail Teknis (Debugging)"):
                 st.write("**Teks Hasil Preprocessing:**", cleaned_text)
-                st.write("**Hasil Representasi Angka (Sequences):**", sequences)
-                st.write("**Nilai Probabilitas Mentah Model (Sigmoid):**", float(prediction))
+                st.write("**Hasil Representasi Angka (Sequences asli):**", raw_sequences)
+                st.write("**Matriks Padding Akhir (Input ke Model):**", input_matrix.tolist())
+                st.write("**Nilai Probabilitas Mentah Model (Sigmoid):**", prediction)
