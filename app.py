@@ -32,7 +32,7 @@ def text_preprocessing(text):
     text = text.lower()
     return text
 
-# --- 3. LOAD MODEL & TOKENIZER (Menggunakan Cache agar Cepat) ---
+# --- 3. LOAD MODEL & TOKENIZER ---
 @st.cache_resource
 def load_assets():
     # Membaca file Tokenizer dengan encoding UTF-8
@@ -54,10 +54,8 @@ except Exception as e:
 st.title("🤖 AI vs Human Text Detector")
 st.write("Masukkan teks atau artikel di bawah ini untuk mendeteksi apakah teks tersebut ditulis oleh manusia atau dihasilkan oleh AI.")
 
-# Input Teks area
 user_input = st.text_area("Masukkan Teks Di Sini:", height=250, placeholder="Ketik atau tempel teks teks Anda...")
 
-# Parameter maxlen berdasarkan rata-rata panjang teks dataset Anda
 MAX_LEN = 200 
 
 if st.button("Deteksi Teks", type="primary"):
@@ -68,11 +66,15 @@ if st.button("Deteksi Teks", type="primary"):
             # 1. Preprocessing teks input
             cleaned_text = text_preprocessing(user_input)
             
-            # 2. Tokenizing & Padding (KOREKSI: Menggunakan 'pre' sesuai default Keras)
+            # 2. Tokenizing & Padding (Memastikan ekstraksi berbentuk matriks list 2D bersih)
             sequences = tokenizer.texts_to_sequences([cleaned_text])
-            padded = pad_sequences(sequences, maxlen=MAX_LEN, padding='pre') 
             
-            # Pastikan tipe data berupa objek numpy array int32 murni
+            # Jika sequences kosong atau gagal mengenali kata, berikan fallback pencegahan
+            if not sequences or len(sequences[0]) == 0:
+                padded = np.zeros((1, MAX_LEN), dtype=np.int32)
+            else:
+                padded = pad_sequences(sequences, maxlen=MAX_LEN, padding='pre')
+            
             input_matrix = np.array(padded, dtype=np.int32)
             
             # 3. Prediksi Model
@@ -82,7 +84,7 @@ if st.button("Deteksi Teks", type="primary"):
             # 4. Menampilkan Hasil
             st.subheader("Hasil Analisis:")
             
-            # Berdasarkan Confusion Matrix pada notebook Anda: xticklabels=['Human (0)', 'AI (1)']
+            # Threshold klasifikasi (0 = Human, 1 = AI)
             if prediction >= 0.5:
                 confidence = prediction * 100
                 st.error(f"🚨 **Terdeteksi sebagai teks buatan AI** ({confidence:.2f}% kepastian)")
@@ -93,5 +95,6 @@ if st.button("Deteksi Teks", type="primary"):
             # Fitur Opsional untuk Debugging
             with st.expander("Lihat Detail Teknis (Debugging)"):
                 st.write("**Teks Hasil Preprocessing:**", cleaned_text)
-                st.write("**Hasil Sequences:**", sequences)
+                st.write("**Hasil Sequences (Token Mentah):**", sequences)
+                st.write("**Matriks Input 5 Token Pertama:**", input_matrix[0][:5].tolist())
                 st.write("**Nilai Probabilitas Mentah Model (Sigmoid):**", prediction)
