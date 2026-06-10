@@ -35,14 +35,12 @@ def text_preprocessing(text):
 # --- 3. LOAD MODEL & TOKENIZER (Menggunakan Cache agar Cepat) ---
 @st.cache_resource
 def load_assets():
-    # Menggunakan encoding utf-8 untuk mencegah karakter rusak saat dibaca di server cloud
+    # Membaca file Tokenizer dengan encoding UTF-8
     with open('tokenizer.json', 'r', encoding='utf-8') as f:
-        tokenizer_json = f.read()
-    
-    # Memuat Tokenizer Keras dari konfigurasi JSON
+        tokenizer_json = f.read() 
     tokenizer = tokenizer_from_json(tokenizer_json)
         
-    # Memuat berkas model Keras (.keras)
+    # Memuat kembali model Keras asli Anda (.keras)
     model = tf.keras.models.load_model('model_bilstm.keras')
     return tokenizer, model
 
@@ -59,7 +57,7 @@ st.write("Masukkan teks atau artikel di bawah ini untuk mendeteksi apakah teks t
 # Input Teks area
 user_input = st.text_area("Masukkan Teks Di Sini:", height=250, placeholder="Ketik atau tempel teks teks Anda...")
 
-# Parameter maxlen saat pelatihan model
+# Parameter maxlen berdasarkan rata-rata panjang teks dataset Anda
 MAX_LEN = 200 
 
 if st.button("Deteksi Teks", type="primary"):
@@ -70,11 +68,11 @@ if st.button("Deteksi Teks", type="primary"):
             # 1. Preprocessing teks input
             cleaned_text = text_preprocessing(user_input)
             
-            # 2. Tokenizing & Padding (Koreksi format list input kalimat)
-            raw_sequences = tokenizer.texts_to_sequences([cleaned_text])
-            padded = pad_sequences(raw_sequences, maxlen=MAX_LEN, padding='post')
+            # 2. Tokenizing & Padding (KOREKSI: Menggunakan 'pre' sesuai default Keras)
+            sequences = tokenizer.texts_to_sequences([cleaned_text])
+            padded = pad_sequences(sequences, maxlen=MAX_LEN, padding='pre') 
             
-            # Pastikan tipe data berupa objek numpy array int32 murni untuk layer Embedding Keras
+            # Pastikan tipe data berupa objek numpy array int32 murni
             input_matrix = np.array(padded, dtype=np.int32)
             
             # 3. Prediksi Model
@@ -85,7 +83,6 @@ if st.button("Deteksi Teks", type="primary"):
             st.subheader("Hasil Analisis:")
             
             # Berdasarkan Confusion Matrix pada notebook Anda: xticklabels=['Human (0)', 'AI (1)']
-            # Jika skor mendekati 1 berarti AI, jika mendekati 0 berarti Human
             if prediction >= 0.5:
                 confidence = prediction * 100
                 st.error(f"🚨 **Terdeteksi sebagai teks buatan AI** ({confidence:.2f}% kepastian)")
@@ -96,6 +93,5 @@ if st.button("Deteksi Teks", type="primary"):
             # Fitur Opsional untuk Debugging
             with st.expander("Lihat Detail Teknis (Debugging)"):
                 st.write("**Teks Hasil Preprocessing:**", cleaned_text)
-                st.write("**Hasil Sequences (Harus berupa list angka linear standar):**")
-                st.json(raw_sequences[0])  # Menggunakan st.json agar memaksa cetak list angka murni
+                st.write("**Hasil Sequences:**", sequences)
                 st.write("**Nilai Probabilitas Mentah Model (Sigmoid):**", prediction)
