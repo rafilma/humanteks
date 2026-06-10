@@ -40,7 +40,7 @@ def load_assets():
         tokenizer_json = f.read() 
     tokenizer = tokenizer_from_json(tokenizer_json)
         
-    # Memuat kembali model dengan format bawaan Keras (.keras)
+    # Memuat model dengan format Keras (.keras)
     model = tf.keras.models.load_model('model_bilstm.keras')
     return tokenizer, model
 
@@ -68,9 +68,10 @@ if st.button("Deteksi Teks", type="primary"):
             # 1. Preprocessing teks input
             cleaned_text = text_preprocessing(user_input)
             
-            # 2. Tokenizing & Padding (Menggunakan 'pre' agar selaras dengan model)
+            # 2. Tokenizing & Padding 
+            # DIKEMBALIKAN KE 'post' agar urutan indeks angka tidak bergeser tertutup padding awal
             sequences = tokenizer.texts_to_sequences([cleaned_text])
-            padded = pad_sequences(sequences, maxlen=MAX_LEN, padding='pre') 
+            padded = pad_sequences(sequences, maxlen=MAX_LEN, padding='post') 
             
             # 3. Prediksi Model
             prediction = model.predict(padded)[0][0]
@@ -78,17 +79,15 @@ if st.button("Deteksi Teks", type="primary"):
             # 4. Menampilkan Hasil
             st.subheader("Hasil Analisis:")
             
-            # KOREKSI URUTAN LABEL: 
-            # Berdasarkan hasil debug nilai 0.22 (mendekati 0) seharusnya adalah teks AI.
-            # Maka nilai di bawah 0.5 (< 0.5) dikategorikan sebagai AI.
-            if prediction < 0.5:
-                confidence = (1 - prediction) * 100
+            # DIKEMBALIKAN KE STANDAR KORIDOR CONFUSION MATRIX KANAN (0 = Human, 1 = AI)
+            if prediction >= 0.5:
+                confidence = prediction * 100
                 st.error(f"🚨 **Terdeteksi sebagai teks buatan AI** ({confidence:.2f}% kepastian)")
             else:
-                confidence = prediction * 100
+                confidence = (1 - prediction) * 100
                 st.success(f"✍️ **Terdeteksi sebagai teks buatan Manusia** ({confidence:.2f}% kepastian)")
                 
-            # Fitur Opsional untuk Debugging jika hasil dirasa janggal
+            # Fitur Opsional untuk Debugging
             with st.expander("Lihat Detail Teknis (Debugging)"):
                 st.write("**Teks Hasil Preprocessing:**", cleaned_text)
                 st.write("**Hasil Representasi Angka (Sequences):**", sequences)
