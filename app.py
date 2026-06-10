@@ -35,12 +35,12 @@ def text_preprocessing(text):
 # --- 3. LOAD MODEL & TOKENIZER (Menggunakan Cache agar Cepat) ---
 @st.cache_resource
 def load_assets():
-    # BACA SEBAGAI STRING (Gunakan .read(), jangan json.load)
+    # Membaca file Tokenizer sebagai string mentah (.read())
     with open('tokenizer.json', 'r') as f:
         tokenizer_json = f.read() 
     tokenizer = tokenizer_from_json(tokenizer_json)
         
-    # Load Model TensorFlow/Keras
+    # Memuat kembali model dengan format bawaan Keras (.keras)
     model = tf.keras.models.load_model('model_bilstm.keras')
     return tokenizer, model
 
@@ -57,7 +57,7 @@ st.write("Masukkan teks atau artikel di bawah ini untuk mendeteksi apakah teks t
 # Input Teks area
 user_input = st.text_area("Masukkan Teks Di Sini:", height=250, placeholder="Ketik atau tempel teks teks Anda...")
 
-# Parameter padding (Sesuaikan dengan maxlen saat Anda melatih model, contoh: 200)
+# Parameter maxlen saat pelatihan model
 MAX_LEN = 200 
 
 if st.button("Deteksi Teks", type="primary"):
@@ -65,12 +65,12 @@ if st.button("Deteksi Teks", type="primary"):
         st.warning("Silakan masukkan teks terlebih dahulu!")
     else:
         with st.spinner("Sedang menganalisis teks..."):
-            # 1. Preprocessing
+            # 1. Preprocessing teks input
             cleaned_text = text_preprocessing(user_input)
             
-            # 2. Tokenizing & Padding
+            # 2. Tokenizing & Padding (Menggunakan 'pre' agar selaras dengan model)
             sequences = tokenizer.texts_to_sequences([cleaned_text])
-            padded = pad_sequences(sequences, maxlen=MAX_LEN, padding='post') # sesuaikan post/pre dengan notebook Anda
+            padded = pad_sequences(sequences, maxlen=MAX_LEN, padding='pre') 
             
             # 3. Prediksi Model
             prediction = model.predict(padded)[0][0]
@@ -78,7 +78,7 @@ if st.button("Deteksi Teks", type="primary"):
             # 4. Menampilkan Hasil
             st.subheader("Hasil Analisis:")
             
-            # Asumsi output sigmoid (0: Human, 1: AI) sesuai dengan xticklabels di confusion matrix Anda
+            # Logika Klasifikasi Berdasarkan Nilai Probabilitas Sigmoid (Threshold 0.5)
             if prediction >= 0.5:
                 confidence = prediction * 100
                 st.error(f"🚨 **Terdeteksi sebagai teks buatan AI** ({confidence:.2f}% kepastian)")
@@ -86,6 +86,8 @@ if st.button("Deteksi Teks", type="primary"):
                 confidence = (1 - prediction) * 100
                 st.success(f"✍️ **Terdeteksi sebagai teks buatan Manusia** ({confidence:.2f}% kepastian)")
                 
-            # Opsional: Tampilkan hasil teks setelah dibersihkan
-            with st.expander("Lihat Teks Hasil Preprocessing"):
-                st.write(cleaned_text)
+            # Fitur Opsional untuk Debugging jika hasil dirasa janggal
+            with st.expander("Lihat Detail Teknis (Debugging)"):
+                st.write("**Teks Hasil Preprocessing:**", cleaned_text)
+                st.write("**Hasil Representasi Angka (Sequences):**", sequences)
+                st.write("**Nilai Probabilitas Mentah Model (Sigmoid):**", float(prediction))
