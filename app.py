@@ -35,10 +35,10 @@ def text_preprocessing(text):
 # --- 3. LOAD MODEL & TOKENIZER (Menggunakan Cache agar Cepat) ---
 @st.cache_resource
 def load_assets():
-    # Load Tokenizer
-    with open('tokenizer.json') as f:
-        data = json.load(f)
-        tokenizer = tokenizer_from_json(data)
+    # BACA SEBAGAI STRING (Gunakan .read(), jangan json.load)
+    with open('tokenizer.json', 'r') as f:
+        tokenizer_json = f.read() 
+    tokenizer = tokenizer_from_json(tokenizer_json)
         
     # Load Model TensorFlow/Keras
     model = tf.keras.models.load_model('model_bilstm.keras')
