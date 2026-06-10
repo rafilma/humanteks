@@ -78,12 +78,14 @@ if st.button("Deteksi Teks", type="primary"):
             # 4. Menampilkan Hasil
             st.subheader("Hasil Analisis:")
             
-            # Logika Klasifikasi Berdasarkan Nilai Probabilitas Sigmoid (Threshold 0.5)
-            if prediction >= 0.5:
-                confidence = prediction * 100
+            # KOREKSI URUTAN LABEL: 
+            # Berdasarkan hasil debug nilai 0.22 (mendekati 0) seharusnya adalah teks AI.
+            # Maka nilai di bawah 0.5 (< 0.5) dikategorikan sebagai AI.
+            if prediction < 0.5:
+                confidence = (1 - prediction) * 100
                 st.error(f"🚨 **Terdeteksi sebagai teks buatan AI** ({confidence:.2f}% kepastian)")
             else:
-                confidence = (1 - prediction) * 100
+                confidence = prediction * 100
                 st.success(f"✍️ **Terdeteksi sebagai teks buatan Manusia** ({confidence:.2f}% kepastian)")
                 
             # Fitur Opsional untuk Debugging jika hasil dirasa janggal
