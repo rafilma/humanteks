@@ -35,13 +35,13 @@ def text_preprocessing(text):
 # --- 3. LOAD MODEL & TOKENIZER (Menggunakan Cache agar Cepat) ---
 @st.cache_resource
 def load_assets():
-    # 1. Membaca Tokenizer sebagai string teks mentah
+    # BACA SEBAGAI STRING (Gunakan .read(), jangan json.load)
     with open('tokenizer.json', 'r') as f:
         tokenizer_json = f.read() 
     tokenizer = tokenizer_from_json(tokenizer_json)
         
-    # 2. PERBARUI BARIS INI: Ubah nama file menjadi BI_LSTM.h5
-    model = tf.keras.models.load_model('BI_LSTM.h5')
+    # Load Model TensorFlow/Keras
+    model = tf.keras.models.load_model('model_bilstm.keras')
     return tokenizer, model
 
 try:
