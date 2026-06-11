@@ -60,7 +60,7 @@ st.sidebar.title("📌 Navigation")
 
 page = st.sidebar.radio(
     "Pilih Halaman",
-    ["🏠 Home", "🔍 Prediksi", "ℹ️ About Model"]
+    ["🏠 Home", "🔍 Prediksi", "ℹ️ About"]
 )
 
 # ======================================================
