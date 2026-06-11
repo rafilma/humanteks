@@ -235,9 +235,9 @@ elif page == "🔍 Prediksi":
 # ======================================================
 # ABOUT PAGE
 # ======================================================
-elif page == "ℹ️ About Model":
+elif page == "ℹ️ About":
 
-    st.title("ℹ️ About Model")
+    st.title("ℹ️ About")
 
     st.markdown("""
     ## Model yang Digunakan
